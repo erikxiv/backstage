@@ -81,6 +81,10 @@ async function main() {
   const appEnv = useHotMemoize(module, () => createEnv('app'));
 
   const apiRouter = Router();
+  apiRouter.use('', async (req, res, next) => {
+    console.log('middleware xiv', req.headers);
+    next();
+  });
   apiRouter.use('/catalog', await catalog(catalogEnv));
   apiRouter.use('/rollbar', await rollbar(rollbarEnv));
   apiRouter.use('/scaffolder', await scaffolder(scaffolderEnv));

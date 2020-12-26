@@ -13,7 +13,10 @@ let config: Configuration;
 export const configureMiddleware = (c: Configuration) => config = c;
 
 export const middleware = async (req, res, next) => {
-  if (! req.headers.authorization.startsWith("Bearer ")) {
+  if (
+    ! req.headers.authorization
+    || ! req.headers.authorization.startsWith("Bearer ")
+  ) {
     res.status(401).send(`Unauthorized`);
     return;
   }

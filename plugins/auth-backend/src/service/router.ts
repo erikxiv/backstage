@@ -30,6 +30,7 @@ import {
 import { CatalogClient } from '@backstage/catalog-client';
 import { Config } from '@backstage/config';
 import { createOidcRouter, DatabaseKeyStore, TokenFactory } from '../identity';
+import { configureMiddleware } from './middleware';
 import session from 'express-session';
 import passport from 'passport';
 
@@ -66,6 +67,7 @@ export async function createRouter({
     keyDurationSeconds,
     logger: logger.child({ component: 'token-factory' }),
   });
+  configureMiddleware({issuer: authUrl, tokenIssuer});
   const catalogApi = new CatalogClient({ discoveryApi: discovery });
 
   const secret = config.getOptionalString('auth.session.secret');

@@ -34,6 +34,7 @@ import {
   useHotMemoize,
 } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
+import { middleware as authMiddleware } from '@backstage/plugin-auth-backend';
 import healthcheck from './plugins/healthcheck';
 import auth from './plugins/auth';
 import catalog from './plugins/catalog';
@@ -81,19 +82,15 @@ async function main() {
   const appEnv = useHotMemoize(module, () => createEnv('app'));
 
   const apiRouter = Router();
-  apiRouter.use('', async (req, res, next) => {
-    console.log('middleware xiv', req.headers);
-    next();
-  });
-  apiRouter.use('/catalog', await catalog(catalogEnv));
-  apiRouter.use('/rollbar', await rollbar(rollbarEnv));
-  apiRouter.use('/scaffolder', await scaffolder(scaffolderEnv));
+  apiRouter.use('/catalog', authMiddleware, await catalog(catalogEnv));
+  apiRouter.use('/rollbar', authMiddleware, await rollbar(rollbarEnv));
+  apiRouter.use('/scaffolder', authMiddleware, await scaffolder(scaffolderEnv));
   apiRouter.use('/auth', await auth(authEnv));
-  apiRouter.use('/techdocs', await techdocs(techdocsEnv));
-  apiRouter.use('/kubernetes', await kubernetes(kubernetesEnv));
-  apiRouter.use('/proxy', await proxy(proxyEnv));
-  apiRouter.use('/graphql', await graphql(graphqlEnv));
-  apiRouter.use(notFoundHandler());
+  apiRouter.use('/techdocs', authMiddleware, await techdocs(techdocsEnv));
+  apiRouter.use('/kubernetes', authMiddleware, await kubernetes(kubernetesEnv));
+  apiRouter.use('/proxy', authMiddleware, await proxy(proxyEnv));
+  apiRouter.use('/graphql', authMiddleware, await graphql(graphqlEnv));
+  apiRouter.use(authMiddleware, notFoundHandler());
 
   const service = createServiceBuilder(module)
     .loadConfig(config)

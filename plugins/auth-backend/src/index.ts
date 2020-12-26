@@ -15,6 +15,7 @@
  */
 
 export * from './service/router';
+export { middleware } from './service/middleware';
 export * from './providers';
 
 // flow package provides 2 functions

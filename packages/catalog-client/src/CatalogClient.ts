@@ -41,7 +41,6 @@ export class CatalogClient implements CatalogApi {
   }) {
     this.discoveryApi = options.discoveryApi;
     this.identityApi = options.identityApi;
-    // console.log(this.identityApi);
   }
 
   async getLocationById(id: String): Promise<Location | undefined> {

@@ -21,15 +21,21 @@ import {
   NotFoundError,
   PluginEndpointDiscovery,
 } from '@backstage/backend-common';
+import { IdentityApi } from '@backstage/core';
 
 /**
  * A catalog client tailored for reading out entity data from the catalog.
  */
 export class CatalogEntityClient {
   private readonly discovery: PluginEndpointDiscovery;
+  private readonly identityApi: IdentityApi;
 
-  constructor(options: { discovery: PluginEndpointDiscovery }) {
+  constructor(options: {
+    discovery: PluginEndpointDiscovery;
+    identityApi: IdentityApi;
+  }) {
     this.discovery = options.discovery;
+    this.identityApi = options.identityApi;
   }
 
   /**
@@ -44,8 +50,14 @@ export class CatalogEntityClient {
     ];
 
     const baseUrl = await this.discovery.getBaseUrl('catalog');
+    const idToken = await this.identityApi.getIdToken();
     const response = await fetch(
       `${baseUrl}/entities?filter=${conditions.join(',')}`,
+      {
+        headers: {
+          authorization: `Bearer ${idToken}`,
+        },
+      },
     );
 
     if (!response.ok) {

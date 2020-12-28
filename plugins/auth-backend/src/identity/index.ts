@@ -17,4 +17,4 @@
 export { createOidcRouter } from './router';
 export { TokenFactory } from './TokenFactory';
 export { DatabaseKeyStore } from './DatabaseKeyStore';
-export type { KeyStore, TokenIssuer, TokenParams } from './types';
+export type { AnyJWK, KeyStore, TokenIssuer, TokenParams } from './types';

@@ -21,21 +21,15 @@ import {
   NotFoundError,
   PluginEndpointDiscovery,
 } from '@backstage/backend-common';
-import { IdentityApi } from '@backstage/core';
 
 /**
  * A catalog client tailored for reading out entity data from the catalog.
  */
 export class CatalogEntityClient {
   private readonly discovery: PluginEndpointDiscovery;
-  private readonly identityApi: IdentityApi;
 
-  constructor(options: {
-    discovery: PluginEndpointDiscovery;
-    identityApi: IdentityApi;
-  }) {
+  constructor(options: { discovery: PluginEndpointDiscovery }) {
     this.discovery = options.discovery;
-    this.identityApi = options.identityApi;
   }
 
   /**
@@ -43,19 +37,21 @@ export class CatalogEntityClient {
    *
    * Throws a NotFoundError or ConflictError if 0 or multiple templates are found.
    */
-  async findTemplate(templateName: string): Promise<TemplateEntityV1alpha1> {
+  async findTemplate(
+    templateName: string,
+    options?: { headers?: Record<string, string> },
+  ): Promise<TemplateEntityV1alpha1> {
     const conditions = [
       'kind=template',
       `metadata.name=${encodeURIComponent(templateName)}`,
     ];
 
     const baseUrl = await this.discovery.getBaseUrl('catalog');
-    const idToken = await this.identityApi.getIdToken();
     const response = await fetch(
       `${baseUrl}/entities?filter=${conditions.join(',')}`,
       {
         headers: {
-          authorization: `Bearer ${idToken}`,
+          ...options?.headers,
         },
       },
     );

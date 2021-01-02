@@ -15,7 +15,6 @@
  */
 
 import { PluginEndpointDiscovery } from '@backstage/backend-common';
-import { CatalogApi } from '@backstage/catalog-client';
 import { Config } from '@backstage/config';
 import express from 'express';
 import { Logger } from 'winston';
@@ -119,7 +118,6 @@ export type AuthProviderFactoryOptions = {
   logger: Logger;
   tokenIssuer: TokenIssuer;
   discovery: PluginEndpointDiscovery;
-  catalogApi: CatalogApi;
 };
 
 export type AuthProviderFactory = (

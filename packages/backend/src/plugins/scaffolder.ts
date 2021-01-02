@@ -23,7 +23,6 @@ import {
   Templaters,
   CatalogEntityClient,
 } from '@backstage/plugin-scaffolder-backend';
-import { identityApiRef } from '@backstage/core';
 import { SingleHostDiscovery } from '@backstage/backend-common';
 import type { PluginEnvironment } from '../types';
 import Docker from 'dockerode';
@@ -44,7 +43,7 @@ export default async function createPlugin({
   const dockerClient = new Docker();
 
   const discovery = SingleHostDiscovery.fromConfig(config);
-  const entityClient = new CatalogEntityClient({ discovery, identityApiRef });
+  const entityClient = new CatalogEntityClient({ discovery });
 
   return await createRouter({
     preparers,

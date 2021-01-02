@@ -27,7 +27,6 @@ import {
   PluginDatabaseManager,
   PluginEndpointDiscovery,
 } from '@backstage/backend-common';
-import { CatalogClient } from '@backstage/catalog-client';
 import { Config } from '@backstage/config';
 import { createOidcRouter, DatabaseKeyStore, TokenFactory } from '../identity';
 import { configureMiddleware } from './middleware';
@@ -67,8 +66,7 @@ export async function createRouter({
     keyDurationSeconds,
     logger: logger.child({ component: 'token-factory' }),
   });
-  configureMiddleware({issuer: authUrl, tokenIssuer});
-  const catalogApi = new CatalogClient({ discoveryApi: discovery });
+  configureMiddleware({ issuer: authUrl, tokenIssuer });
 
   const secret = config.getOptionalString('auth.session.secret');
   if (secret) {
@@ -105,7 +103,6 @@ export async function createRouter({
         logger,
         tokenIssuer,
         discovery,
-        catalogApi,
       });
 
       const r = Router();

@@ -14,35 +14,95 @@
  * limitations under the License.
  */
 
-import { CatalogApi } from '@backstage/catalog-client';
 import { UserEntity } from '@backstage/catalog-model';
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
 import { CatalogIdentityClient } from './CatalogIdentityClient';
+import { PluginEndpointDiscovery } from '@backstage/backend-common';
+
+const server = setupServer();
+const mockBaseUrl = 'http://backstage:9191/i-am-a-mock-base';
+const discovery: PluginEndpointDiscovery = {
+  async getBaseUrl(_pluginId) {
+    return mockBaseUrl;
+  },
+  async getExternalBaseUrl(_pluginId) {
+    return mockBaseUrl;
+  },
+};
 
 describe('CatalogIdentityClient', () => {
-  const catalogApi: jest.Mocked<CatalogApi> = {
-    getLocationById: jest.fn(),
-    getEntityByName: jest.fn(),
-    getEntities: jest.fn(),
-    addLocation: jest.fn(),
-    getLocationByEntity: jest.fn(),
-    removeEntityByUid: jest.fn(),
-  };
+  let client: CatalogIdentityClient;
 
-  afterEach(() => jest.resetAllMocks());
+  beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+  afterAll(() => server.close());
+  afterEach(() => server.resetHandlers());
 
-  it('passes through the correct search params', async () => {
-    catalogApi.getEntities.mockResolvedValueOnce({ items: [{} as UserEntity] });
-    const client = new CatalogIdentityClient({
-      catalogApi: catalogApi as CatalogApi,
-    });
+  beforeEach(() => {
+    client = new CatalogIdentityClient({ discovery });
+  });
 
-    client.findUser({ annotations: { key: 'value' } });
-
-    expect(catalogApi.getEntities).toBeCalledWith({
-      filter: {
-        kind: 'user',
-        'metadata.annotations.key': 'value',
+  describe('findUser', () => {
+    const defaultServiceResponse: UserEntity[] = [
+      {
+        apiVersion: 'backstage.io/v1alpha1',
+        kind: 'User',
+        metadata: {
+          name: 'Test1',
+          namespace: 'test1',
+          annotations: {
+            key: 'value',
+          },
+        },
+        spec: {
+          memberOf: ['group1'],
+        },
       },
+    ];
+    const defaultResponse: {
+      items: UserEntity[];
+    } = {
+      items: defaultServiceResponse,
+    };
+
+    beforeEach(() => {
+      server.use(
+        rest.get(`${mockBaseUrl}/entities`, (_, res, ctx) => {
+          return res(ctx.json(defaultServiceResponse));
+        }),
+      );
     });
+
+    it('should entities from correct endpoint', async () => {
+      const response = await client.findUser({ annotations: { key: 'value' } });
+      expect(response).toEqual(defaultResponse);
+    });
+
+    it('builds entity search filters properly', async () => {
+      expect.assertions(2);
+
+      server.use(
+        rest.get(`${mockBaseUrl}/entities`, (req, res, ctx) => {
+          expect(req.url.search).toBe(
+            '?filter=kind=user,metadata.annotations.key=value',
+          );
+          return res(ctx.json([]));
+        }),
+      );
+
+      const response = await client.findUser({ annotations: { key: 'value' } });
+      // expect(catalogApi.getEntities).toBeCalledWith({
+      //   filter: {
+      //     kind: 'user',
+      //     'metadata.annotations.key': 'value',
+      //   },
+      // });
+
+      // expect(response.items).toEqual([]);
+      // TODO: Expect to throw
+      expect(response).toEqual(defaultServiceResponse[0]);
+    });
+
+    // TODO: Add headers test?
   });
 });

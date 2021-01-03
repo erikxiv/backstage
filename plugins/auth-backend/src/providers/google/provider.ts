@@ -46,16 +46,19 @@ type PrivateInfo = {
 export type GoogleAuthProviderOptions = OAuthProviderOptions & {
   logger: Logger;
   identityClient: CatalogIdentityClient;
+  authorizationHeaders?: Record<string, string>;
 };
 
 export class GoogleAuthProvider implements OAuthHandlers {
   private readonly _strategy: GoogleStrategy;
   private readonly logger: Logger;
   private readonly identityClient: CatalogIdentityClient;
+  private readonly authorizationHeaders?: Record<string, string>;
 
   constructor(options: GoogleAuthProviderOptions) {
     this.logger = options.logger;
     this.identityClient = options.identityClient;
+    this.authorizationHeaders = options.authorizationHeaders;
     // TODO: throw error if env variables not set?
     this._strategy = new GoogleStrategy(
       {
@@ -150,11 +153,14 @@ export class GoogleAuthProvider implements OAuthHandlers {
     }
 
     try {
-      const user = await this.identityClient.findUser({
-        annotations: {
-          'google.com/email': profile.email,
+      const user = await this.identityClient.findUser(
+        {
+          annotations: {
+            'google.com/email': profile.email,
+          },
         },
-      });
+        { headers: this.authorizationHeaders },
+      );
 
       return {
         ...response,
@@ -181,6 +187,7 @@ export const createGoogleProvider: AuthProviderFactory = ({
   logger,
   tokenIssuer,
   discovery,
+  authorizationHeaders,
 }) =>
   OAuthEnvironmentHandler.mapConfig(config, envConfig => {
     const clientId = envConfig.getString('clientId');
@@ -193,6 +200,7 @@ export const createGoogleProvider: AuthProviderFactory = ({
       callbackUrl,
       logger,
       identityClient: new CatalogIdentityClient({ discovery }),
+      authorizationHeaders,
     });
 
     return OAuthAdapter.fromConfig(globalConfig, provider, {

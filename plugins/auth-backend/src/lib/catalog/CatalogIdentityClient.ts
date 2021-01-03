@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import fetch from 'cross-fetch';
 import {
   ConflictError,
   NotFoundError,
@@ -79,7 +80,6 @@ export class CatalogIdentityClient {
 
     const entities: UserEntity[] = await response.json();
 
-    // Back to method code
     if (entities.length !== 1) {
       if (entities.length > 1) {
         throw new ConflictError('User lookup resulted in multiple matches');

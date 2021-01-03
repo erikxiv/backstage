@@ -59,11 +59,6 @@ describe('CatalogIdentityClient', () => {
         },
       },
     ];
-    const defaultResponse: {
-      items: UserEntity[];
-    } = {
-      items: defaultServiceResponse,
-    };
 
     beforeEach(() => {
       server.use(
@@ -75,7 +70,7 @@ describe('CatalogIdentityClient', () => {
 
     it('should entities from correct endpoint', async () => {
       const response = await client.findUser({ annotations: { key: 'value' } });
-      expect(response).toEqual(defaultResponse);
+      expect(response).toEqual(defaultServiceResponse[0]);
     });
 
     it('builds entity search filters properly', async () => {
@@ -86,23 +81,42 @@ describe('CatalogIdentityClient', () => {
           expect(req.url.search).toBe(
             '?filter=kind=user,metadata.annotations.key=value',
           );
-          return res(ctx.json([]));
+          return res(ctx.json(defaultServiceResponse));
         }),
       );
 
       const response = await client.findUser({ annotations: { key: 'value' } });
-      // expect(catalogApi.getEntities).toBeCalledWith({
-      //   filter: {
-      //     kind: 'user',
-      //     'metadata.annotations.key': 'value',
-      //   },
-      // });
 
-      // expect(response.items).toEqual([]);
-      // TODO: Expect to throw
       expect(response).toEqual(defaultServiceResponse[0]);
     });
 
-    // TODO: Add headers test?
+    it('omits authorization header if not available', async () => {
+      expect.assertions(1);
+
+      server.use(
+        rest.get(`${mockBaseUrl}/entities`, (req, res, ctx) => {
+          expect(req.headers.has('authorization')).toBe(false);
+          return res(ctx.json([]));
+        }),
+      );
+
+      client.findUser({ annotations: { key: 'value' } });
+    });
+
+    it('adds authorization header if available', async () => {
+      expect.assertions(1);
+
+      server.use(
+        rest.get(`${mockBaseUrl}/entities`, (req, res, ctx) => {
+          expect(req.headers.get('authorization')).toEqual('hello');
+          return res(ctx.json([]));
+        }),
+      );
+
+      client.findUser(
+        { annotations: { key: 'value' } },
+        { headers: { authorization: 'hello' } },
+      );
+    });
   });
 });

@@ -28,12 +28,7 @@ import {
   PluginEndpointDiscovery,
 } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
-import {
-  createOidcRouter,
-  DatabaseKeyStore,
-  TokenFactory,
-  TokenIssuer,
-} from '../identity';
+import { createOidcRouter, DatabaseKeyStore, TokenFactory } from '../identity';
 import session from 'express-session';
 import passport from 'passport';
 
@@ -47,21 +42,14 @@ export interface RouterOptions {
   providerFactories?: ProviderFactories;
 }
 
-export interface HackedRouter extends express.Router {
-  authConfig: {
-    issuer: string;
-    tokenIssuer: TokenIssuer;
-  };
-}
-
 export async function createRouter({
   logger,
   config,
   discovery,
   database,
   providerFactories,
-}: RouterOptions): Promise<HackedRouter> {
-  const router = Router() as HackedRouter;
+}: RouterOptions): Promise<express.Router> {
+  const router = Router();
 
   const appUrl = config.getString('app.baseUrl');
   const authUrl = await discovery.getExternalBaseUrl('auth');
@@ -150,11 +138,6 @@ export async function createRouter({
     const { provider } = req.params;
     throw new NotFoundError(`No auth provider registered for '${provider}'`);
   });
-
-  router.authConfig = {
-    issuer: authUrl,
-    tokenIssuer,
-  };
 
   return router;
 }

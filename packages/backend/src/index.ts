@@ -47,7 +47,6 @@ import graphql from './plugins/graphql';
 import app from './plugins/app';
 import { PluginEnvironment } from './types';
 import passport from 'passport';
-import { BasicStrategy } from 'passport-http';
 
 function makeCreateEnv(config: Config) {
   const root = getRootLogger();
@@ -86,31 +85,21 @@ async function main() {
   const apiRouter = Router();
   const authRouter = await auth(authEnv);
 
-  passport.use(
-    new BasicStrategy(function(
-      _username: string,
-      _password: string,
-      done: (err?: Error, res?: boolean) => void,
-    ) {
-      return done(undefined, true);
-    }),
-  );
   passport.use(createBackstageIdentityStrategy(authRouter.authConfig));
+  const backstageAuth = passport.authenticate('jwt', {
+    session: false,
+  });
 
   apiRouter.use(passport.initialize());
-  apiRouter.use(
-    '/catalog',
-    passport.authenticate('jwt', { session: false }),
-    await catalog(catalogEnv),
-  );
-  apiRouter.use('/rollbar', await rollbar(rollbarEnv));
-  apiRouter.use('/scaffolder', await scaffolder(scaffolderEnv));
+  apiRouter.use('/catalog', backstageAuth, await catalog(catalogEnv));
+  apiRouter.use('/rollbar', backstageAuth, await rollbar(rollbarEnv));
+  apiRouter.use('/scaffolder', backstageAuth, await scaffolder(scaffolderEnv));
   apiRouter.use('/auth', authRouter);
-  apiRouter.use('/techdocs', await techdocs(techdocsEnv));
-  apiRouter.use('/kubernetes', await kubernetes(kubernetesEnv));
-  apiRouter.use('/proxy', await proxy(proxyEnv));
-  apiRouter.use('/graphql', await graphql(graphqlEnv));
-  apiRouter.use(notFoundHandler());
+  apiRouter.use('/techdocs', backstageAuth, await techdocs(techdocsEnv));
+  apiRouter.use('/kubernetes', backstageAuth, await kubernetes(kubernetesEnv));
+  apiRouter.use('/proxy', backstageAuth, await proxy(proxyEnv));
+  apiRouter.use('/graphql', backstageAuth, await graphql(graphqlEnv));
+  apiRouter.use(backstageAuth, notFoundHandler());
 
   const service = createServiceBuilder(module)
     .loadConfig(config)

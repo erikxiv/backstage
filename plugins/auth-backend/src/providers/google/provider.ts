@@ -38,6 +38,7 @@ import {
   PassportDoneCallback,
 } from '../../lib/passport';
 import { AuthProviderFactory, RedirectInfo } from '../types';
+import { TokenIssuer } from '../../identity';
 
 type PrivateInfo = {
   refreshToken: string;
@@ -46,19 +47,19 @@ type PrivateInfo = {
 export type GoogleAuthProviderOptions = OAuthProviderOptions & {
   logger: Logger;
   identityClient: CatalogIdentityClient;
-  authorizationHeaders?: Record<string, string>;
+  tokenIssuer: TokenIssuer;
 };
 
 export class GoogleAuthProvider implements OAuthHandlers {
   private readonly _strategy: GoogleStrategy;
   private readonly logger: Logger;
   private readonly identityClient: CatalogIdentityClient;
-  private readonly authorizationHeaders?: Record<string, string>;
+  private readonly tokenIssuer: TokenIssuer;
 
   constructor(options: GoogleAuthProviderOptions) {
     this.logger = options.logger;
     this.identityClient = options.identityClient;
-    this.authorizationHeaders = options.authorizationHeaders;
+    this.tokenIssuer = options.tokenIssuer;
     // TODO: throw error if env variables not set?
     this._strategy = new GoogleStrategy(
       {
@@ -153,13 +154,20 @@ export class GoogleAuthProvider implements OAuthHandlers {
     }
 
     try {
+      const token = await this.tokenIssuer.issueToken({
+        claims: { sub: 'backstage.io/auth-backend' },
+      });
       const user = await this.identityClient.findUser(
         {
           annotations: {
             'google.com/email': profile.email,
           },
         },
-        { headers: this.authorizationHeaders },
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        },
       );
 
       return {
@@ -187,7 +195,6 @@ export const createGoogleProvider: AuthProviderFactory = ({
   logger,
   tokenIssuer,
   discovery,
-  authorizationHeaders,
 }) =>
   OAuthEnvironmentHandler.mapConfig(config, envConfig => {
     const clientId = envConfig.getString('clientId');
@@ -199,8 +206,8 @@ export const createGoogleProvider: AuthProviderFactory = ({
       clientSecret,
       callbackUrl,
       logger,
+      tokenIssuer,
       identityClient: new CatalogIdentityClient({ discovery }),
-      authorizationHeaders,
     });
 
     return OAuthAdapter.fromConfig(globalConfig, provider, {

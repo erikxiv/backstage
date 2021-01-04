@@ -118,7 +118,6 @@ export type AuthProviderFactoryOptions = {
   logger: Logger;
   tokenIssuer: TokenIssuer;
   discovery: PluginEndpointDiscovery;
-  authorizationHeaders?: Record<string, string>;
 };
 
 export type AuthProviderFactory = (

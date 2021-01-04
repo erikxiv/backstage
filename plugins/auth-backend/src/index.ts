@@ -15,7 +15,7 @@
  */
 
 export * from './service/router';
-export { middleware } from './service/middleware';
+export { createBackstageIdentityStrategy } from './lib/passport';
 export * from './providers';
 
 // flow package provides 2 functions

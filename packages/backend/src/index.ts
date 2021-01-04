@@ -34,7 +34,7 @@ import {
   useHotMemoize,
 } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
-import { middleware as authMiddleware } from '@backstage/plugin-auth-backend';
+import { createBackstageIdentityStrategy } from '@backstage/plugin-auth-backend';
 import healthcheck from './plugins/healthcheck';
 import auth from './plugins/auth';
 import catalog from './plugins/catalog';
@@ -46,6 +46,8 @@ import techdocs from './plugins/techdocs';
 import graphql from './plugins/graphql';
 import app from './plugins/app';
 import { PluginEnvironment } from './types';
+import passport from 'passport';
+import { BasicStrategy } from 'passport-http';
 
 function makeCreateEnv(config: Config) {
   const root = getRootLogger();
@@ -82,15 +84,33 @@ async function main() {
   const appEnv = useHotMemoize(module, () => createEnv('app'));
 
   const apiRouter = Router();
-  apiRouter.use('/catalog', authMiddleware, await catalog(catalogEnv));
-  apiRouter.use('/rollbar', authMiddleware, await rollbar(rollbarEnv));
-  apiRouter.use('/scaffolder', authMiddleware, await scaffolder(scaffolderEnv));
-  apiRouter.use('/auth', await auth(authEnv));
-  apiRouter.use('/techdocs', authMiddleware, await techdocs(techdocsEnv));
-  apiRouter.use('/kubernetes', authMiddleware, await kubernetes(kubernetesEnv));
-  apiRouter.use('/proxy', authMiddleware, await proxy(proxyEnv));
-  apiRouter.use('/graphql', authMiddleware, await graphql(graphqlEnv));
-  apiRouter.use(authMiddleware, notFoundHandler());
+  const authRouter = await auth(authEnv);
+
+  passport.use(
+    new BasicStrategy(function(
+      _username: string,
+      _password: string,
+      done: (err?: Error, res?: boolean) => void,
+    ) {
+      return done(undefined, true);
+    }),
+  );
+  passport.use(createBackstageIdentityStrategy(authRouter.authConfig));
+
+  apiRouter.use(passport.initialize());
+  apiRouter.use(
+    '/catalog',
+    passport.authenticate('jwt', { session: false }),
+    await catalog(catalogEnv),
+  );
+  apiRouter.use('/rollbar', await rollbar(rollbarEnv));
+  apiRouter.use('/scaffolder', await scaffolder(scaffolderEnv));
+  apiRouter.use('/auth', authRouter);
+  apiRouter.use('/techdocs', await techdocs(techdocsEnv));
+  apiRouter.use('/kubernetes', await kubernetes(kubernetesEnv));
+  apiRouter.use('/proxy', await proxy(proxyEnv));
+  apiRouter.use('/graphql', await graphql(graphqlEnv));
+  apiRouter.use(notFoundHandler());
 
   const service = createServiceBuilder(module)
     .loadConfig(config)

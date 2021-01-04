@@ -28,8 +28,12 @@ import {
   PluginEndpointDiscovery,
 } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
-import { createOidcRouter, DatabaseKeyStore, TokenFactory } from '../identity';
-import { configureMiddleware } from './middleware';
+import {
+  createOidcRouter,
+  DatabaseKeyStore,
+  TokenFactory,
+  TokenIssuer,
+} from '../identity';
 import session from 'express-session';
 import passport from 'passport';
 
@@ -43,14 +47,21 @@ export interface RouterOptions {
   providerFactories?: ProviderFactories;
 }
 
+export interface HackedRouter extends express.Router {
+  authConfig: {
+    issuer: string;
+    tokenIssuer: TokenIssuer;
+  };
+}
+
 export async function createRouter({
   logger,
   config,
   discovery,
   database,
   providerFactories,
-}: RouterOptions): Promise<express.Router> {
-  const router = Router();
+}: RouterOptions): Promise<HackedRouter> {
+  const router = Router() as HackedRouter;
 
   const appUrl = config.getString('app.baseUrl');
   const authUrl = await discovery.getExternalBaseUrl('auth');
@@ -66,7 +77,6 @@ export async function createRouter({
     keyDurationSeconds,
     logger: logger.child({ component: 'token-factory' }),
   });
-  configureMiddleware({ issuer: authUrl, tokenIssuer });
 
   const secret = config.getOptionalString('auth.session.secret');
   if (secret) {
@@ -140,6 +150,11 @@ export async function createRouter({
     const { provider } = req.params;
     throw new NotFoundError(`No auth provider registered for '${provider}'`);
   });
+
+  router.authConfig = {
+    issuer: authUrl,
+    tokenIssuer,
+  };
 
   return router;
 }

@@ -1,23 +1,20 @@
 import { Request } from 'express';
-import { JWK, JWT, JWKS, JWKECKey } from 'jose';
+import { JWK, JWT, JWKS } from 'jose';
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
-import { TokenIssuer } from '../../identity';
 import { PassportDoneCallback } from './PassportStrategyHelper';
 import { BackstageIdentity } from '../../providers';
+import { IdentityClient } from '../../identity';
+import { PluginEndpointDiscovery } from '@backstage/backend-common';
 
-type Configuration = {
-  // Value of the issuer claim in issued tokens
-  issuer: string;
-  // TokenIssuer to retrieve signing keys from
-  tokenIssuer: TokenIssuer;
-};
-
-// export const configureMiddleware = (c: Configuration) => (config = c);
-
-export const createBackstageIdentityStrategy = (config: Configuration) => {
+export const createBackstageIdentityStrategy = async (
+  discovery: PluginEndpointDiscovery,
+) => {
+  const client: IdentityClient = new IdentityClient({ discovery });
+  const issuer = await discovery.getExternalBaseUrl('auth');
   let keyStore: JWKS.KeyStore;
   let keyStoreUpdated: number;
+
   return new JwtStrategy(
     {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -35,11 +32,7 @@ export const createBackstageIdentityStrategy = (config: Configuration) => {
         // Refresh signing keys from identity if needed
         if (!keyStore || (payload?.iat && payload.iat > keyStoreUpdated)) {
           const now = Date.now() / 1000;
-          const publicKeys: {
-            keys: JWKECKey[];
-          } = ((await config.tokenIssuer.listPublicKeys()) as unknown) as {
-            keys: JWKECKey[];
-          };
+          const publicKeys = await client.listPublicKeys();
           keyStore = new JWKS.KeyStore(
             publicKeys.keys.map(key => JWK.asKey(key)),
           );
@@ -54,8 +47,7 @@ export const createBackstageIdentityStrategy = (config: Configuration) => {
       },
       algorithms: ['ES256'],
       audience: 'backstage',
-      // TODO: How to handle initial setup to ensure this value exists?
-      issuer: config?.issuer,
+      issuer,
       passReqToCallback: true,
     },
     (

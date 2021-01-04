@@ -85,7 +85,7 @@ async function main() {
   const apiRouter = Router();
   const authRouter = await auth(authEnv);
 
-  passport.use(createBackstageIdentityStrategy(authRouter.authConfig));
+  passport.use(await createBackstageIdentityStrategy(authEnv.discovery));
   const backstageAuth = passport.authenticate('jwt', {
     session: false,
   });

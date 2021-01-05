@@ -22,4 +22,4 @@ export {
   makeProfileInfo,
 } from './PassportStrategyHelper';
 export type { PassportDoneCallback } from './PassportStrategyHelper';
-export { createBackstageIdentityStrategy } from './BackstageIdentityStrategy';
+export { BackstageIdentityStrategy } from './BackstageIdentityStrategy';

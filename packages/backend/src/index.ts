@@ -34,7 +34,7 @@ import {
   useHotMemoize,
 } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
-import { createBackstageIdentityStrategy } from '@backstage/plugin-auth-backend';
+import { BackstageIdentityStrategy } from '@backstage/plugin-auth-backend';
 import healthcheck from './plugins/healthcheck';
 import auth from './plugins/auth';
 import catalog from './plugins/catalog';
@@ -82,19 +82,21 @@ async function main() {
   const graphqlEnv = useHotMemoize(module, () => createEnv('graphql'));
   const appEnv = useHotMemoize(module, () => createEnv('app'));
 
-  const apiRouter = Router();
-  const authRouter = await auth(authEnv);
-
-  passport.use(await createBackstageIdentityStrategy(authEnv.discovery));
-  const backstageAuth = passport.authenticate('jwt', {
+  passport.use(
+    new BackstageIdentityStrategy({
+      discovery: SingleHostDiscovery.fromConfig(config),
+    }),
+  );
+  const backstageAuth = passport.authenticate('backstage', {
     session: false,
   });
 
+  const apiRouter = Router();
   apiRouter.use(passport.initialize());
   apiRouter.use('/catalog', backstageAuth, await catalog(catalogEnv));
   apiRouter.use('/rollbar', backstageAuth, await rollbar(rollbarEnv));
   apiRouter.use('/scaffolder', backstageAuth, await scaffolder(scaffolderEnv));
-  apiRouter.use('/auth', authRouter);
+  apiRouter.use('/auth', await auth(authEnv));
   apiRouter.use('/techdocs', backstageAuth, await techdocs(techdocsEnv));
   apiRouter.use('/kubernetes', backstageAuth, await kubernetes(kubernetesEnv));
   apiRouter.use('/proxy', backstageAuth, await proxy(proxyEnv));

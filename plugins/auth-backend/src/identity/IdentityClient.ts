@@ -26,7 +26,6 @@ export class IdentityClient {
 
   constructor(options: { discovery: PluginEndpointDiscovery }) {
     this.discovery = options.discovery;
-    console.log('new', this.discovery);
   }
 
   /**
@@ -35,7 +34,6 @@ export class IdentityClient {
   async listPublicKeys(): Promise<{
     keys: JWKECKey[];
   }> {
-    console.log('old', this.discovery);
     const url = `${await this.discovery.getBaseUrl(
       'auth',
     )}/.well-known/jwks.json`;

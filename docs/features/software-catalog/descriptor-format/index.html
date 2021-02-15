@@ -226,14 +226,15 @@ in this document for the specification structure of specific kinds.</p>
 described below.</p>
 <p>In addition to these, you may add any number of other fields directly under
 <code>metadata</code>, but be aware that general plugins and tools may not be able to
-understand their semantics.</p>
+understand their semantics. See <a href="/docs/features/software-catalog/extending-the-model">Extending the model</a>
+for more information.</p>
 <h3><a class="anchor" aria-hidden="true" id="name-required"></a><a href="#name-required" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>name</code> [required]</h3>
 <p>The name of the entity. This name is both meant for human eyes to recognize the
 entity, and for machines and other components to reference the entity (e.g. in
 URLs or from other entity specification files).</p>
 <p>Names must be unique per kind, within a given namespace (if specified), at any
-point in time. Names may be reused at a later time, after an entity is deleted
-from the registry.</p>
+point in time. This uniqueness constraint is case insensitive. Names may be
+reused at a later time, after an entity is deleted from the registry.</p>
 <p>Names are required to follow a certain format. Entities that do not follow those
 rules will not be accepted for registration in the catalog. The ruleset is
 configurable to fit your organization's needs, but the default behavior is as
@@ -243,25 +244,15 @@ follows.</p>
 <li>Must consist of sequences of <code>[a-z0-9A-Z]</code> possibly separated by one of
 <code>[-_.]</code></li>
 </ul>
-<p>Example: <code>visits-tracking-service</code>, <code>CircleciBuildsDump_avro_gcs</code></p>
-<p>In addition to this, names are passed through a normalization function and then
-compared to the same normalized form of other entity names and made sure to not
-collide. This rule of uniqueness exists to avoid situations where e.g. both
-<code>my-component</code> and <code>MyComponent</code> are registered side by side, which leads to
-confusion and risk. The normalization function is also configurable, but the
-default behavior is as follows.</p>
-<ul>
-<li>Strip out all characters outside of the set <code>[a-zA-Z0-9]</code></li>
-<li>Convert to lowercase</li>
-</ul>
-<p>Example: <code>CircleciBuildsDs_avro_gcs</code> -&gt; <code>circlecibuildsdsavrogcs</code></p>
+<p>Example: <code>visits-tracking-service</code>, <code>CircleciBuildsDumpV2_avro_gcs</code></p>
 <h3><a class="anchor" aria-hidden="true" id="namespace-optional"></a><a href="#namespace-optional" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>namespace</code> [optional]</h3>
 <p>The ID of a namespace that the entity belongs to. This is a string that follows
 the same format restrictions as <code>name</code> above.</p>
 <p>This field is optional, and currently has no special semantics apart from
 bounding the name uniqueness constraint if specified. It is reserved for future
 use and may get broader semantic implication later. For now, it is recommended
-to not specify a namespace unless you have specific need to do so.</p>
+to not specify a namespace unless you have specific need to do so. This means
+the entity belongs to the <code>&quot;default&quot;</code> namespace.</p>
 <p>Namespaces may also be part of the catalog, and are <code>v1</code> / <code>Namespace</code> entities,
 i.e. not Backstage specific but the same as in Kubernetes.</p>
 <h3><a class="anchor" aria-hidden="true" id="description-optional"></a><a href="#description-optional" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>description</code> [optional]</h3>
@@ -281,8 +272,7 @@ as values in queries or filters.</p>
 is required. The prefix, if present, must be a valid lowercase domain name, at
 most 253 characters in total. The name part must be sequences of <code>[a-zA-Z0-9]</code>
 separated by any of <code>[-_.]</code>, at most 63 characters in total.</p>
-<p>The <code>backstage.io/</code> prefix is reserved for use by Backstage core components.
-Some keys such as <code>system</code> also have predefined semantics.</p>
+<p>The <code>backstage.io/</code> prefix is reserved for use by Backstage core components.</p>
 <p>Values are strings that follow the same restrictions as <code>name</code> above.</p>
 <h3><a class="anchor" aria-hidden="true" id="annotations-optional"></a><a href="#annotations-optional" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>annotations</code> [optional]</h3>
 <p>An object with arbitrary non-identifying metadata attached to the entity,

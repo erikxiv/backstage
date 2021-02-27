@@ -8,6 +8,7 @@
   "publishConfig": {
     "access": "public",
     "main": "dist/index.cjs.js",
+    "registry": "https://artifacts.schibsted.io/artifactory/api/npm/npm-virtual/",
     "types": "dist/index.d.ts"
   },
   "homepage": "https://backstage.io",

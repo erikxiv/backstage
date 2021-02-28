@@ -77,7 +77,7 @@ export async function createRouter({
   });
 
   router.get('/metadata/entity/:namespace/:kind/:name', async (req, res) => {
-    const catalogUrl = await discovery.getBaseUrl('catalog');
+    const catalogUrl = await discovery.getExternalBaseUrl('catalog');
 
     const { kind, namespace, name } = req.params;
 
@@ -108,9 +108,9 @@ export async function createRouter({
     const { kind, namespace, name } = req.params;
     const storageUrl =
       config.getOptionalString('techdocs.storageUrl') ??
-      `${await discovery.getBaseUrl('techdocs')}/static/docs`;
+      `${await discovery.getExternalBaseUrl('techdocs')}/static/docs`;
 
-    const catalogUrl = await discovery.getBaseUrl('catalog');
+    const catalogUrl = await discovery.getExternalBaseUrl('catalog');
     const triple = [kind, namespace, name].map(encodeURIComponent).join('/');
 
     const token = getBearerToken(req.headers.authorization);
